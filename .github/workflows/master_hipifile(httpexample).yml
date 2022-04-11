@@ -29,10 +29,11 @@ jobs:
       - name: 'Restore Project Dependencies Using Mvn'
         shell: pwsh
         run: |
+          echo ls
           pushd './'
-          ls
+          echo ls
           pushd '../../'
-          ls
+          echo ls
           mvn clean package
           popd
       - name: 'Run Azure Functions Action'
