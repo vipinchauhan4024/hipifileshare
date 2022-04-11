@@ -40,5 +40,5 @@ jobs:
           app-name: 'HipiFile'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_71610A56722B4FD2827A0F57424C58D0 }}
-          package: '${{ env.PACKAGE_DIRECTORY }}'
+          package: '${{ env.PACKAGE_DIRECTORY }}/hipi-azure-function'
           respect-pom-xml: true
