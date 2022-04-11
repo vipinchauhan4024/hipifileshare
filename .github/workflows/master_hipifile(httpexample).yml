@@ -38,6 +38,6 @@ jobs:
         with:
           app-name: 'hipifile'
           slot-name: 'HttpExample'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8F5307EB560E4316B2DB23D80D4FBA25 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B43E7E1D4BA7474B93EFAA71B0ACDFE1 }}
           package: '${{ env.PACKAGE_DIRECTORY }}'
           respect-pom-xml: true
