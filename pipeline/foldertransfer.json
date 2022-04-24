@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Copy_t14",
+				"name": "foldercopy",
 				"type": "Copy",
 				"dependsOn": [],
 				"policy": {
