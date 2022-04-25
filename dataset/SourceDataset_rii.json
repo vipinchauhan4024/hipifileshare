@@ -10,7 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"folderPath": "files/files3",
+				"folderPath": "files/files",
 				"fileSystem": "protusfiles"
 			}
 		}
