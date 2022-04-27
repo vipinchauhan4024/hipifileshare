@@ -74,7 +74,7 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobFSLocation",
-						"folderPath": "PPIFiles/PPIFiles4",
+						"folderPath": "PPIFiles/PPIFiles5",
 						"fileSystem": "protusfiles"
 					}
 				}
