@@ -74,7 +74,7 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobFSLocation",
-						"folderPath": "MPIFiles/MPIFiles2",
+						"folderPath": "MPIFiles/MPIFiles3",
 						"fileSystem": "protusfiles"
 					}
 				}
