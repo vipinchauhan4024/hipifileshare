@@ -83,7 +83,7 @@ public class DownloadFromAzure {
 		try{
 		while (iterator.hasNext()) {
 			  item = iterator.next();
-			System.out.println(item.getName());
+			    System.out.println(item.getName());
 				if (item!=null && !item.isDirectory()) {
                     
 					System.out.println(item.getName());
@@ -145,11 +145,14 @@ public class DownloadFromAzure {
 
 	private boolean matchingBlobId(Set<String> blobIds, String filename) {
 		// pr_mig_1382506_ARGUS SR 1-13583102941.pdf
-		 
+		/*
 		 String blobid =filename.substring(7,filename.indexOf('_',7));
 		 logger.info("**************check blob id in report blob set**** "+ blobid);
 		 logger.info(blobIds.toString());
-		 return blobIds.contains(blobid);
+		return blobIds.contains(blobid);*/
+
+		//Temp for by pass  filtering of attachment based on report num.
+		return true;
 		 
 	}
 
