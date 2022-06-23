@@ -1,14 +1,42 @@
 package volvo.com.hipi.functions;
 
-import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.aad.msal4j.*;
+import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.HttpMethod;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import com.azure.storage.common.StorageSharedKeyCredential;
+import com.azure.storage.file.datalake.DataLakeDirectoryClient;
+import com.azure.storage.file.datalake.DataLakeFileClient;
+import com.azure.storage.file.datalake.DataLakeFileSystemClient;
+import com.azure.storage.file.datalake.DataLakeServiceClient;
+import com.azure.storage.file.datalake.DataLakeServiceClientBuilder;
+import com.azure.storage.file.datalake.models.ListPathsOptions;
+import com.azure.storage.file.datalake.models.PathItem;
+import com.azure.storage.file.datalake.models.AccessControlChangeCounters;
+import com.azure.storage.file.datalake.models.AccessControlChangeResult;
+import com.azure.storage.file.datalake.models.AccessControlType;
+import com.azure.storage.file.datalake.models.PathAccessControl;
+import com.azure.storage.file.datalake.models.PathAccessControlEntry;
+import com.azure.storage.file.datalake.models.PathPermissions;
+import com.azure.storage.file.datalake.models.PathRemoveAccessControlEntry;
+import com.azure.storage.file.datalake.models.RolePermissions;
+import com.azure.storage.file.datalake.options.PathSetAccessControlRecursiveOptions;
+import volvo.com.hipi.helper.*;
+
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * Azure Functions with HTTP Trigger.
@@ -19,24 +47,119 @@ public class HttpTriggerFunction {
      * 1. curl -d "HTTP Body" {your host}/api/HttpExample
      * 2. curl "{your host}/api/HttpExample?name=HTTP%20Query"
      */
+
+    public static String CLIENT_ID = "bc7bfd79-e552-43c3-83f7-1f6554c8eaa4";
+    public static String CLIENT_SECRET = "bc7bfd79-e552-43c3-83f7-1f6554c8eaa4";
+    public static String AUTHORITY = "https://login.microsoftonline.com/f25493ae-1c98-41d7-8a33-0be75f5fe603";
+    private DownloadFromAzure downloadFromAzure;
+
+    public HttpTriggerFunction() throws URISyntaxException {
+        downloadFromAzure = new DownloadFromAzure();
+    }
+
     @FunctionName("HttpExample")
     public HttpResponseMessage run(
             @HttpTrigger(
-                name = "req",
-                methods = {HttpMethod.GET, HttpMethod.POST},
-                authLevel = AuthorizationLevel.ANONYMOUS)
-                HttpRequestMessage<Optional<String>> request,
-            final ExecutionContext context) {
+                    name = "req",
+                    methods = {HttpMethod.GET, HttpMethod.POST},
+                    authLevel = AuthorizationLevel.ANONYMOUS)
+                    HttpRequestMessage<Optional<String>> request,
+            final ExecutionContext context) throws IOException {
         context.getLogger().info("Java HTTP trigger processed a request.");
 
         // Parse query parameter
-        final String query = request.getQueryParameters().get("name");
-        final String name = request.getBody().orElse(query);
-
-        if (name == null) {
-            return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a name on the query string or in the request body").build();
-        } else {
-            return request.createResponseBuilder(HttpStatus.OK).body("Hello, " + name).build();
+        final String query = request.getQueryParameters().get("rero");
+        File file = null;
+        try {
+             file = downloadFile("PPI", "100027", "295652");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
+        System.out.println(file);
+        HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK).body((Object) file).header("Content-Disposition", "attachment; filename=" + "295652.zip").build();
+
+        return response;//request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a name on the query string or in the request body").build();
+
     }
+
+
+    private void Auth() throws MalformedURLException {
+        IClientCredential credential = ClientCredentialFactory.createFromSecret(CLIENT_SECRET);
+        ConfidentialClientApplication app = ConfidentialClientApplication
+                .builder(CLIENT_ID, credential)
+                .authority(AUTHORITY)
+                .build();
+
+
+    }
+
+
+    public File downloadFile(String reportType, String reportno, String reportid) {
+
+        System.out.println("Download for file started" + reportid);
+        List<File> files = null;
+        FileOutputStream fos;
+        ZipOutputStream zos;
+        File zipFile = new File(reportid+".zip");
+        try {
+            files = downloadFromAzure.getAttachmentsFromAzureBlob(reportno, reportid, reportType);
+            fos = new FileOutputStream(zipFile);
+            zos = new ZipOutputStream(fos);
+            // create a list to add files to be zipped
+
+
+            // package files
+            for (File file : files) {
+                // new zip entry and copying inputstream with file to
+                // zipOutputStream, after all closing streams
+           /*     zipOutputStream.putNextEntry(new ZipEntry(file.getName().substring(file.getName().indexOf("pr_mig"))));
+                FileInputStream fileInputStream = new FileInputStream(file);
+                IOUtils.copy(fileInputStream, zipOutputStream);
+                fileInputStream.close();
+                zipOutputStream.closeEntry();*/
+
+                addToZipFile(file, zos);
+
+                zos.close();
+                fos.close();
+            }
+            // zipOutputStream.close();
+            System.out.println("downlaod finish");
+        } catch (Exception e) {
+            String text = "Error occured sorry !! may be report does not have attachments";
+            e.printStackTrace();
+        } finally {
+            if (files != null) {
+                for (File file : files) {
+                    if (file.exists()) {
+                        file.delete();
+                    }
+
+                }
+            }
+        }
+        return zipFile;
+    }
+
+
+    public static void addToZipFile(File file, ZipOutputStream zos) throws FileNotFoundException, IOException {
+
+        String fileName = file.getName().substring(file.getName().indexOf("pr_mig"));
+        System.out.println("Writing '" + fileName + "' to zip file");
+
+        FileInputStream fis = new FileInputStream(file);
+        ZipEntry zipEntry = new ZipEntry(fileName);
+        zos.putNextEntry(zipEntry);
+
+        byte[] bytes = new byte[1024];
+        int length;
+        while ((length = fis.read(bytes)) >= 0) {
+            zos.write(bytes, 0, length);
+        }
+
+        zos.closeEntry();
+        fis.close();
+    }
+
 }
