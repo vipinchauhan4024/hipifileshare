@@ -54,7 +54,7 @@ public class DownloadFromAzure {
 	}
 
 	
-	public List<File> getAttachmentsFromAzureBlob(String reportNo, String reportId, String reportType) throws Exception {
+	/*public List<File> getAttachmentsFromAzureBlob(String reportNo, String reportId, String reportType) throws Exception {
 		logger.info("Downloading files for report : "+reportNo);
 		if(reportId == null ||reportId== null || reportType== null){
 			throw new Exception("reportnumber , reportid and reportType required ");
@@ -110,6 +110,66 @@ public class DownloadFromAzure {
 		}
 		System.out.println(files);
 		return files;
+	}*/
+
+	public List<File> getAttachmentsFromAzureBlob(String reportNo, String reportId, String reportType) throws Exception {
+		logger.info("Downloading files for report : "+reportNo);
+		if(reportId == null ||reportId== null || reportType== null){
+			throw new Exception("reportnumber , reportid and reportType required ");
+		}
+		Set<String> reportIdAttachmentBlobIds = new HashSet<>();//getBlobIdsForReportIdNum(reportNo,reportId,reportType);
+		Date d = new Date(System.currentTimeMillis());
+		//connectToUrl("https://portal.azure.com");
+		//connectToUrl("https://portal.azure.com/hipifilesadlgen2.dfs.core.windows.net");
+		String timestamp = d.toString().replaceAll(":", "_");
+		DataLakeServiceClient dataLakeServiceClient = AzureBlobStorageClient.GetDataLakeServiceClient();
+		DataLakeFileSystemClient dataLakeFileSystemClient = dataLakeServiceClient.getFileSystemClient("hipi");
+		List<File> files = new ArrayList<>();
+		DataLakeDirectoryClient directoryClient = dataLakeFileSystemClient.getDirectoryClient("Attachments").getSubdirectoryClient(reportType+"Files").getSubdirectoryClient(reportNo);
+		System.out.println(directoryClient.getDirectoryUrl());
+
+		DataLakeFileClient fileClient ;//= directoryClient.getFileClient("pr_mig_1092286_DQ6376M.pdf");
+		File file; //=  new File(timestamp + "pr_mig_1092286_DQ6376M.pdf");
+
+		/*copyInputStreamToFile(fileClient.openInputStream().getInputStream(), file);
+		files.add(file);*/
+
+		PagedIterable<PathItem> pagedIterable = directoryClient.listPaths(false, false, 100, java.time.Duration.ofMillis(100000l));
+		java.util.Iterator<PathItem> iterator = pagedIterable.iterator();
+		String filename;
+		PathItem item;
+		try{
+			while (iterator.hasNext()) {
+				item = iterator.next();
+				if (item!=null && !item.isDirectory()) {
+
+					System.out.println(item.getName());
+					filename = item.getName().substring(item.getName().lastIndexOf("/") + 1);
+					if (matchingBlobId(reportIdAttachmentBlobIds, filename)) {
+						System.out.println(filename);
+						fileClient = directoryClient.getFileClient(filename);
+						file = new File(timestamp + filename);
+
+						/*OutputStream targetStream = new FileOutputStream(file);
+						fileClient.read(targetStream);
+						targetStream.close();
+						fileClient.flush(file.length());*/
+						fileClient.readToFile(timestamp + filename, true);
+						//copyInputStreamToFile(fileClient.openInputStream().getInputStream(), file);
+						files.add(file);
+					}
+
+				} else if(reportId != null && !"".equals(reportId)) {
+					String  dirName= item.getName().substring(item.getName().lastIndexOf("/") + 1);
+					System.out.println(dirName );
+					 addReportFilesFromSubDir(reportId, dirName, directoryClient, timestamp,files);
+				}
+			}
+
+		} catch(Exception e){
+			e.printStackTrace();
+		}
+		return files;
 	}
 
 	 private void addReportFilesFromSubDir(String reportId, String dirName, DataLakeDirectoryClient directoryClient, String timestamp, List<File> files) {
@@ -131,7 +191,8 @@ public class DownloadFromAzure {
 						logger.info(filename);
 						fileClient = client.getFileClient(filename);
 						file = new File(timestamp + filename);
-						copyInputStreamToFile(fileClient.openInputStream().getInputStream(), file);
+						//copyInputStreamToFile(fileClient.openInputStream().getInputStream(), file);
+						fileClient.readToFile(timestamp + filename, true);
 						files.add(file);
 					} 
 			}

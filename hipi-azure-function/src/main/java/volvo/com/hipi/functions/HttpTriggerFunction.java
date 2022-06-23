@@ -66,21 +66,49 @@ public class HttpTriggerFunction {
                     HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) throws IOException {
         context.getLogger().info("Java HTTP trigger processed a request.");
-
         // Parse query parameter
-        final String query = request.getQueryParameters().get("rero");
+        final String reportType = request.getQueryParameters().get("reportType");
+        final String reportNo = request.getQueryParameters().get("reportNo");
+        final String reportId = request.getQueryParameters().get("reportId");
         File file = null;
         try {
-             file = downloadFile("PPI", "100027", "295652");
+             file = downloadFile(reportType, reportNo, reportId);
+
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-        System.out.println(file);
-        HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK).body((Object) file).header("Content-Disposition", "attachment; filename=" + "295652.zip").build();
 
-        return response;//request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a name on the query string or in the request body").build();
+        System.out.println(file.getAbsolutePath());
 
+        String zipName = reportNo+"_"+reportId;
+
+        byte[] b =readFileToBytes(file);
+        System.out.println("byte length " +  b.length);
+        HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK).body((Object)b).header("Content-Disposition", "attachment; filename=" + zipName+".zip").build();
+        file.delete();
+        return response;
+
+    }
+
+    private static byte[] readFileToBytes(File file) throws IOException {
+
+        byte[] bytes = new byte[(int) file.length()];
+
+        FileInputStream fis = null;
+        try {
+
+            fis = new FileInputStream(file);
+
+            //read file into bytes[]
+            fis.read(bytes);
+
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
+        }
+return bytes;
     }
 
 
@@ -120,10 +148,11 @@ public class HttpTriggerFunction {
                 zipOutputStream.closeEntry();*/
 
                 addToZipFile(file, zos);
+                System.out.println("File to zip : " + file.getName());
 
-                zos.close();
-                fos.close();
             }
+            zos.close();
+            fos.close();
             // zipOutputStream.close();
             System.out.println("downlaod finish");
         } catch (Exception e) {
@@ -139,6 +168,7 @@ public class HttpTriggerFunction {
                 }
             }
         }
+
         return zipFile;
     }
 
@@ -147,7 +177,7 @@ public class HttpTriggerFunction {
 
         String fileName = file.getName().substring(file.getName().indexOf("pr_mig"));
         System.out.println("Writing '" + fileName + "' to zip file");
-
+        System.out.println(file.getTotalSpace());
         FileInputStream fis = new FileInputStream(file);
         ZipEntry zipEntry = new ZipEntry(fileName);
         zos.putNextEntry(zipEntry);
@@ -156,9 +186,9 @@ public class HttpTriggerFunction {
         int length;
         while ((length = fis.read(bytes)) >= 0) {
             zos.write(bytes, 0, length);
+
         }
 
-        zos.closeEntry();
         fis.close();
     }
 
