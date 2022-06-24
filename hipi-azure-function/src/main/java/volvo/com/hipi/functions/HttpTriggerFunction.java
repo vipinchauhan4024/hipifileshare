@@ -89,9 +89,9 @@ public class HttpTriggerFunction {
 
         String zipName = reportNo + "_" + reportId;
 
-        byte[] b = readFileToBytes(file);
-        log.info("byte length " + b.length);
-        HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK).body((Object) b).header("Content-Disposition", "attachment; filename=" + zipName + ".zip").build();
+        byte[] bytes = readFileToBytes(file);
+        log.info("byte length " + bytes.length);
+        HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK).body((Object) bytes).header("Content-Disposition", "attachment; filename=" + zipName + ".zip").build();
         file.delete();
         return response;
 
@@ -141,7 +141,6 @@ public class HttpTriggerFunction {
             fos = new FileOutputStream(zipFile);
             zos = new ZipOutputStream(fos);
             // create a list to add files to be zipped
-
 
             // package files
             for (File file : files) {
