@@ -34,10 +34,12 @@ public class AzureBlobStorageClient {
         StorageSharedKeyCredential sharedKeyCredential =
             new StorageSharedKeyCredential(accountName, accountKey);
 
+
         DataLakeServiceClientBuilder builder = new DataLakeServiceClientBuilder();
 
         builder.credential(sharedKeyCredential);
         builder.endpoint("https://" + accountName + ".dfs.core.windows.net");
+
         dataLakeServiceClient = builder.buildClient();
         return dataLakeServiceClient;
     }

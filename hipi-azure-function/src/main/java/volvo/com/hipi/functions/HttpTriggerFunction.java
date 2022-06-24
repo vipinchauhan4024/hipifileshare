@@ -14,6 +14,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -52,9 +53,11 @@ public class HttpTriggerFunction {
     public static String CLIENT_SECRET = "bc7bfd79-e552-43c3-83f7-1f6554c8eaa4";
     public static String AUTHORITY = "https://login.microsoftonline.com/f25493ae-1c98-41d7-8a33-0be75f5fe603";
     private DownloadFromAzure downloadFromAzure;
+    private Logger log;
 
     public HttpTriggerFunction() throws URISyntaxException {
         downloadFromAzure = new DownloadFromAzure();
+
     }
 
     @FunctionName("HttpExample")
@@ -64,28 +67,31 @@ public class HttpTriggerFunction {
                     methods = {HttpMethod.GET, HttpMethod.POST},
                     authLevel = AuthorizationLevel.ANONYMOUS)
                     HttpRequestMessage<Optional<String>> request,
-            final ExecutionContext context) throws IOException {
-        context.getLogger().info("Java HTTP trigger processed a request.");
+            final ExecutionContext context) throws Exception {
+        log = context.getLogger();
+        downloadFromAzure.setContextLog(log);
+        log.info("Java HTTP trigger processed a request.");
         // Parse query parameter
         final String reportType = request.getQueryParameters().get("reportType");
         final String reportNo = request.getQueryParameters().get("reportNo");
         final String reportId = request.getQueryParameters().get("reportId");
         File file = null;
-        try {
-             file = downloadFile(reportType, reportNo, reportId);
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        // try {
+        file = downloadFile(reportType, reportNo, reportId);
+        log.info("Zip formed without exception : " + file.getAbsolutePath());
+        log.info("Zip length: " + file.length());
+        /*} catch (Exception e) {
+            log.info("Error " +e.getMessage());
             e.printStackTrace();
-        }
+        }*/
 
-        System.out.println(file.getAbsolutePath());
+        log.info(file.getAbsolutePath());
 
-        String zipName = reportNo+"_"+reportId;
+        String zipName = reportNo + "_" + reportId;
 
-        byte[] b =readFileToBytes(file);
-        System.out.println("byte length " +  b.length);
-        HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK).body((Object)b).header("Content-Disposition", "attachment; filename=" + zipName+".zip").build();
+        byte[] b = readFileToBytes(file);
+        log.info("byte length " + b.length);
+        HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK).body((Object) b).header("Content-Disposition", "attachment; filename=" + zipName + ".zip").build();
         file.delete();
         return response;
 
@@ -108,7 +114,7 @@ public class HttpTriggerFunction {
                 fis.close();
             }
         }
-return bytes;
+        return bytes;
     }
 
 
@@ -123,13 +129,13 @@ return bytes;
     }
 
 
-    public File downloadFile(String reportType, String reportno, String reportid) {
+    public File downloadFile(String reportType, String reportno, String reportid) throws Exception {
 
-        System.out.println("Download for file started" + reportid);
+        log.info("Download for file started" + reportid);
         List<File> files = null;
         FileOutputStream fos;
         ZipOutputStream zos;
-        File zipFile = new File(reportid+".zip");
+        File zipFile = new File(reportid + ".zip");
         try {
             files = downloadFromAzure.getAttachmentsFromAzureBlob(reportno, reportid, reportType);
             fos = new FileOutputStream(zipFile);
@@ -148,16 +154,17 @@ return bytes;
                 zipOutputStream.closeEntry();*/
 
                 addToZipFile(file, zos);
-                System.out.println("File to zip : " + file.getName());
+                log.info("File to zip : " + file.getName());
 
             }
             zos.close();
             fos.close();
             // zipOutputStream.close();
-            System.out.println("downlaod finish");
+            log.info("downlaod finish");
         } catch (Exception e) {
             String text = "Error occured sorry !! may be report does not have attachments";
             e.printStackTrace();
+            throw e;
         } finally {
             if (files != null) {
                 for (File file : files) {
