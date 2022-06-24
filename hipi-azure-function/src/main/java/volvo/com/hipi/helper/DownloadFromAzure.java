@@ -143,12 +143,12 @@ public class DownloadFromAzure {
 
 
 
-		DataLakeFileSystemClient dataLakeFileSystemClient = dataLakeServiceClient.getFileSystemClient("hipi");
+		DataLakeFileSystemClient dataLakeFileSystemClient = dataLakeServiceClient.getFileSystemClient("protusfiles");
 		System.out.println("file system "+dataLakeFileSystemClient.getFileSystemUrl());
 		List<File> files = new ArrayList<>();
 
 
-		DataLakeDirectoryClient directoryClient = dataLakeFileSystemClient.getDirectoryClient("Attachments").getSubdirectoryClient(reportType+"Files").getSubdirectoryClient(reportNo);
+		DataLakeDirectoryClient directoryClient = dataLakeFileSystemClient.getDirectoryClient(reportType+"Files").getSubdirectoryClient(reportNo);
 
 
 		System.out.println(directoryClient.getDirectoryUrl());
