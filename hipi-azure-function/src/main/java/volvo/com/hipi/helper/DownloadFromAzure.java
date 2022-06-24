@@ -5,6 +5,9 @@ import com.azure.core.util.Context;
 import com.azure.data.tables.TableClient;
 import com.azure.data.tables.models.TableEntity;
 import com.azure.data.tables.models.TableServiceException;
+import com.azure.storage.blob.*;
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.sas.AccountSasPermission;
 import com.azure.storage.common.sas.AccountSasResourceType;
 import com.azure.storage.common.sas.AccountSasService;
@@ -235,5 +238,60 @@ public class DownloadFromAzure {
 	        }
 
 	    }
+
+
+
+	public List<File>  getDownloadUsingAzureBlobStorageClient() {
+		String connectStr = "DefaultEndpointsProtocol=https;AccountName=hipifilesadlgen2;AccountKey=kBvu9bVMY53Pi+4u8RAxTPOVmxo/G2/4rtsiZZBgh36+p+637q1IeFL/gH2V52wd2m9aEcF6Qcux2c9M1haNWA==;EndpointSuffix=core.windows.net";
+		List<File> files = new ArrayList<>();
+		BlobContainerAsyncClient client = new BlobContainerClientBuilder()
+				.connectionString(connectStr).containerName("protusfiles")
+				.buildAsyncClient();
+
+		BlobContainerClient bclient = new BlobContainerClientBuilder()
+				.connectionString(connectStr).containerName("protusfiles")
+				.buildClient();
+
+		//bclient.getBlobClient("PPIFiles")
+		System.out.println("***************************bclient**************" +bclient);
+		logger.info("***************************bclient**************"+bclient);
+		bclient.listBlobsByHierarchy("PPIFiles").forEach(blob ->
+				System.out.printf("Name: %s, Directory? %b%n", blob.getName(), blob.isPrefix()));
+
+		PagedIterable<BlobItem> itemsList = bclient.listBlobsByHierarchy("PPIFiles");
+		BlobClient bc ;
+
+
+		ListBlobsOptions op =new ListBlobsOptions();
+		op.setPrefix("PPIFiles/100002/");
+		itemsList =bclient.listBlobs(op, Duration.ofMillis(100000l));
+		java.util.Iterator<BlobItem> iterator = itemsList.iterator();
+		logger.info("iterator " +iterator.hasNext());
+		BlobItem item;
+		String filename;
+		File file;
+		Date d = new Date(System.currentTimeMillis());
+		String timestamp = d.toString().replaceAll(":", "_");
+		int count=0;
+		while (iterator.hasNext()) {
+			System.out.println("&&&&&&&&&&&&&&&");
+			logger.info("&&&&&&&&&&&&&&&");
+			item = iterator.next();
+			if (item != null) {
+				System.out.println(item.getName());
+				logger.info(item.getName());
+				bc =bclient.getBlobClient(item.getName());
+				filename = item.getName().substring(item.getName().lastIndexOf("/") + 1);
+				logger.info(filename);
+
+				file = new File( timestamp+count+filename);
+				bc.downloadToFile(file.getPath(),true);
+				//copyInputStreamToFile(fileClient.openInputStream().getInputStream(), file);
+				files.add(file);
+				count++;
+			}
+		}
+		return files;
+	}
 
 }

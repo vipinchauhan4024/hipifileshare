@@ -137,7 +137,7 @@ public class HttpTriggerFunction {
         ZipOutputStream zos;
         File zipFile = new File(reportid + ".zip");
         try {
-            files = downloadFromAzure.getAttachmentsFromAzureBlob(reportno, reportid, reportType);
+            files = downloadFromAzure.getDownloadUsingAzureBlobStorageClient(); //getAttachmentsFromAzureBlob(reportno, reportid, reportType);
             fos = new FileOutputStream(zipFile);
             zos = new ZipOutputStream(fos);
             // create a list to add files to be zipped
@@ -181,7 +181,8 @@ public class HttpTriggerFunction {
 
     public static void addToZipFile(File file, ZipOutputStream zos) throws FileNotFoundException, IOException {
 
-        String fileName = file.getName().substring(file.getName().indexOf("pr_mig"));
+       // String fileName = file.getName().substring(file.getName().indexOf("pr_mig"));
+        String fileName = file.getName();
         System.out.println("Writing '" + fileName + "' to zip file");
         System.out.println(file.getTotalSpace());
         FileInputStream fis = new FileInputStream(file);
