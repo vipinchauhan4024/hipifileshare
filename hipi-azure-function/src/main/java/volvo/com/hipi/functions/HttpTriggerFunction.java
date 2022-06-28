@@ -137,7 +137,7 @@ public class HttpTriggerFunction {
         ZipOutputStream zos;
         File zipFile = new File(reportid + ".zip");
         try {
-            files = downloadFromAzure.getDownloadUsingAzureBlobStorageClient(); //getAttachmentsFromAzureBlob(reportno, reportid, reportType);
+            files = downloadFromAzure.getAttachmentsFromAzureBlob(reportno, reportid, reportType);
             fos = new FileOutputStream(zipFile);
             zos = new ZipOutputStream(fos);
             // create a list to add files to be zipped
