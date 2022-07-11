@@ -29,7 +29,7 @@ jobs:
       - name: 'Restore Project Dependencies Using Mvn'
         shell: pwsh
         run: |
-          pushd './${{ env.PACKAGE_DIRECTORY }}'
+          pushd './${{ env.PACKAGE_DIRECTORY }}/hipi-azure-function'
           mvn clean package
           popd
       - name: 'Run Azure Functions Action'
@@ -39,5 +39,5 @@ jobs:
           app-name: 'hipi-dev-euw-func-01'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4C243BCDA6B4449892A080B90ADC4CC9 }}
-          package: '${{ env.PACKAGE_DIRECTORY }}'
+          package: '${{ env.PACKAGE_DIRECTORY }}/hipi-azure-function'
           respect-pom-xml: true
