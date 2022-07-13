@@ -40,9 +40,10 @@ public class DownloadFromAzure {
 
 
 
-	public Set<String> getBlobIdsForReportIdNum(String reportNo,String reportId,String reportType) throws Exception{
+	public Set<String> getBlobIdsForReportIdNum(String reportNo,String reportId) throws Exception{
 		logger.info("getting blobids files for reportId : "+reportId);
 		TableClient tableClient = AzureTableServiceClient.getHipiReportBlobdataMapingTableClient();
+		Set<String> blobIdSet =null;
 		if(tableClient == null){
 			throw new Exception("Table not found");
 		}
@@ -51,13 +52,15 @@ public class DownloadFromAzure {
 			if (te != null) {
 				String blobids = (String) te.getProperty("blobdataid");
 				if (blobids != null && !"".equals(blobids)) {
-					return new HashSet<>(Arrays.asList(blobids.split(",")));
+					blobIdSet = new  HashSet<>(Arrays.asList(blobids.split(",")));
+				} else {
+					blobIdSet = new HashSet<>();
 				}
 			}
 		} catch(TableServiceException e){
 			logger.info(e.getMessage());
 		}
-		return new HashSet<>();
+		return blobIdSet;
 	}
 
 	public List<File> getAttachmentsFromAzureBlob(String reportNo, String reportId, String reportType) throws Exception {
@@ -65,16 +68,17 @@ public class DownloadFromAzure {
 		if(reportId == null ||reportId== null || reportType== null){
 			throw new Exception("reportnumber , reportid and reportType required ");
 		}
-		Set<String> reportIdAttachmentBlobIds = new HashSet<>();//getBlobIdsForReportIdNum(reportNo,reportId,reportType);
+		Set<String> reportIdAttachmentBlobIds = getBlobIdsForReportIdNum(reportNo,reportId);
 		Date d = new Date(System.currentTimeMillis());
-		connectToUrl("https://portal.azure.com");
-		connectToUrl("http://portal.azure.com/hipifilesadlgen2.dfs.core.windows.net");
+		//connectToUrl("https://portal.azure.com");
+		//connectToUrl("http://portal.azure.com/hipifilesadlgen2.dfs.core.windows.net");
 		String timestamp = d.toString().replaceAll(":", "_");
 		DataLakeServiceClient dataLakeServiceClient = AzureBlobStorageClient.GetDataLakeServiceClient();
 
 
 
-		DataLakeFileSystemClient dataLakeFileSystemClient = dataLakeServiceClient.getFileSystemClient("protusfiles");//("hipi");
+		//DataLakeFileSystemClient dataLakeFileSystemClient = dataLakeServiceClient.getFileSystemClient("hipi");
+		DataLakeFileSystemClient dataLakeFileSystemClient = dataLakeServiceClient.getFileSystemClient("protusfiles");
 		System.out.println("file system "+dataLakeFileSystemClient.getFileSystemUrl());
 		List<File> files = new ArrayList<>();
 
@@ -285,13 +289,17 @@ public class DownloadFromAzure {
 
 	private boolean matchingBlobId(Set<String> blobIds, String filename) {
 		// pr_mig_1382506_ARGUS SR 1-13583102941.pdf
-	/*
-		 String blobid =filename.substring(7,filename.indexOf('_',7));
+
+		//if there is some error in getting azure table
+		if(blobIds == null){
+			return true;
+		}
+		 String blobid = filename.substring(7,filename.indexOf('_',7));
 		 logger.info("**************check blob id in report blob set**** "+ blobid);
 		 logger.info(blobIds.toString());
-		 return blobIds.contains(blobid);*/
+		 return blobIds.contains(blobid);
 
-		return true;
+
 
 	}
 
@@ -365,7 +373,7 @@ public class DownloadFromAzure {
 		Date d = new Date(System.currentTimeMillis());
 		String timestamp = d.toString().replaceAll(":", "_");
 		List<File> files = new ArrayList<>();
-		BlobContainerClient bclient = AzureBlobStorageClient.getAzureBlobContainerClient("protusfiles");//("hipi");
+		BlobContainerClient bclient = AzureBlobStorageClient.getAzureBlobContainerClient("hipi");//("protusfiles");
 		//bclient.getBlobClient("PPIFiles")
 		System.out.println("***************************bclient**************" +bclient);
 		logger.info("***************************bclient**************"+bclient);
@@ -377,8 +385,12 @@ public class DownloadFromAzure {
 			if (bclient != null) {
 				logger.info(bc.getBlobUrl());
 				filename = filePath.substring(filePath.lastIndexOf("/") + 1);
-				logger.info(filename);
-				file = new File( timestamp+filename);
+				file = new File(System.getProperty("user.home"), timestamp+filename);
+				//file = new File( timestamp+filename);
+				file.setReadable(true, false); // set readable
+				file.setWritable(true, false); // set writable
+				file.setExecutable(true, false); // set executable
+				logger.info("Absolute path  *********** "+file.getAbsolutePath());
 				bc.downloadToFile(file.getPath(),true);
 				files.add(file);
 			}

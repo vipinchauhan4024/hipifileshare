@@ -135,7 +135,11 @@ public class HttpTriggerFunction {
         List<File> files = null;
         FileOutputStream fos;
         ZipOutputStream zos;
-        File zipFile = new File(reportid + ".zip");
+        File zipFile = new File(System.getProperty("user.home"), reportid + ".zip");
+       // File zipFile = new File(reportid + ".zip");
+        zipFile.setReadable(true, false); // set readable
+        zipFile.setWritable(true, false); // set writable
+        zipFile.setExecutable(true, false); // set executable
         try {
             files = downloadFromAzure.getAttachmentsFromAzureBlob(reportno, reportid, reportType);
             fos = new FileOutputStream(zipFile);
@@ -144,13 +148,6 @@ public class HttpTriggerFunction {
 
             // package files
             for (File file : files) {
-                // new zip entry and copying inputstream with file to
-                // zipOutputStream, after all closing streams
-           /*     zipOutputStream.putNextEntry(new ZipEntry(file.getName().substring(file.getName().indexOf("pr_mig"))));
-                FileInputStream fileInputStream = new FileInputStream(file);
-                IOUtils.copy(fileInputStream, zipOutputStream);
-                fileInputStream.close();
-                zipOutputStream.closeEntry();*/
 
                 addToZipFile(file, zos);
                 log.info("File to zip : " + file.getName());
@@ -181,8 +178,8 @@ public class HttpTriggerFunction {
 
     public static void addToZipFile(File file, ZipOutputStream zos) throws FileNotFoundException, IOException {
 
-       // String fileName = file.getName().substring(file.getName().indexOf("pr_mig"));
-        String fileName = file.getName();
+        String fileName = file.getName().substring(file.getName().indexOf("pr_mig"));
+       // String fileName = file.getName();
         System.out.println("Writing '" + fileName + "' to zip file");
         System.out.println(file.getTotalSpace());
         FileInputStream fis = new FileInputStream(file);
